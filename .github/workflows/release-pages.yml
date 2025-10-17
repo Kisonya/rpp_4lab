@@ -19,11 +19,9 @@ jobs:
       - name: Вычислить сегмент папки релиза (v<name|tag>)
         id: rel
         run: |
-          NAME="${{ github.event.release.name }}"
           TAG="${{ github.event.release.tag_name }}"
-          BASE="$NAME"
-          if [ -z "$BASE" ]; then BASE="$TAG"; fi
-          if [ -z "$BASE" ]; then BASE="0.0.0"; fi
+          BASE="$TAG"
+          if [ -z "$BASE" ]; then BASE="v0.0.0"; fi
           if [[ "$BASE" =~ ^v ]]; then SEG="$BASE"; else SEG="v$BASE"; fi
           echo "segment=$SEG" >> $GITHUB_OUTPUT
 
@@ -32,13 +30,13 @@ jobs:
           mkdir -p public
           cp -R ru en index.html public/
 
-      - name: Деплоить на gh-pages в /<repo>/${{ steps.rel.outputs.segment }}/
+      - name: Деплоить на gh-pages в /rpp_4lab/${{ steps.rel.outputs.segment }}/
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: public
-          destination_dir: ${{ github.event.repository.name }}/${{ steps.rel.outputs.segment }}
+          destination_dir: rpp_4lab/${{ steps.rel.outputs.segment }}
           keep_files: true
           user_name: github-actions[bot]
           user_email: 41898282+github-actions[bot]@users.noreply.github.com
