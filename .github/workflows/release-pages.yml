@@ -11,32 +11,35 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      # 1. Получение исходников по тегу релиза
       - name: Получить исходники по тегу релиза
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.release.tag_name }}
 
-      - name: Вычислить сегмент папки релиза (v<name|tag>)
+      # 2. Вычисление сегмента папки (v<тег>)
+      - name: Определить имя папки релиза
         id: rel
         run: |
           TAG="${{ github.event.release.tag_name }}"
-          BASE="$TAG"
-          if [ -z "$BASE" ]; then BASE="v0.0.0"; fi
-          if [[ "$BASE" =~ ^v ]]; then SEG="$BASE"; else SEG="v$BASE"; fi
+          if [ -z "$TAG" ]; then TAG="v0.0.0"; fi
+          if [[ "$TAG" =~ ^v ]]; then SEG="$TAG"; else SEG="v$TAG"; fi
           echo "segment=$SEG" >> $GITHUB_OUTPUT
 
+      # 3. Подготовка директории для публикации
       - name: Подготовить директорию для публикации
         run: |
           mkdir -p public
-          cp -R ru en index.html public/
+          cp -R index.html ru en public/
 
-      - name: Деплоить на gh-pages в /rpp_4lab/${{ steps.rel.outputs.segment }}/
+      # 4. Публикация релиза на gh-pages
+      - name: Деплой релиза на GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: public
-          destination_dir: rpp_4lab/${{ steps.rel.outputs.segment }}
+          destination_dir: ${{ steps.rel.outputs.segment }} # <── исправлено!
           keep_files: true
           user_name: github-actions[bot]
           user_email: 41898282+github-actions[bot]@users.noreply.github.com
