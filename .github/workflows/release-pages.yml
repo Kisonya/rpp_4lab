@@ -10,33 +10,37 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+
     steps:
+      # 1️⃣ Получаем исходники по тегу релиза
       - name: Получить исходники по тегу релиза
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.release.tag_name }}
 
-      - name: Определить имя папки релиза (v<tag>)
+      # 2️⃣ Определяем имя папки релиза (v<name|tag>)
+      - name: Вычислить сегмент папки релиза
         id: rel
         run: |
           TAG="${{ github.event.release.tag_name }}"
-          if [ -z "$TAG" ]; then TAG="v0.0.0"; fi
-          if [[ "$TAG" =~ ^v ]]; then SEG="$TAG"; else SEG="v$TAG"; fi
+          BASE="$TAG"
+          if [ -z "$BASE" ]; then BASE="v0.0.0"; fi
+          if [[ "$BASE" =~ ^v ]]; then SEG="$BASE"; else SEG="v$BASE"; fi
           echo "segment=$SEG" >> $GITHUB_OUTPUT
 
-      # Сборка контента версии
+      # 3️⃣ Подготавливаем директорию версии
       - name: Подготовить директорию версии
         run: |
           mkdir -p public-ver
           cp -R index.html ru en public-ver/
 
-      # Сборка корня (только index.html)
+      # 4️⃣ Подготавливаем корневую директорию (актуальная версия сайта)
       - name: Подготовить корневую директорию
         run: |
           mkdir -p public-root
-          cp index.html public-root/
+          cp -R index.html ru en public-root/
 
-      # Деплой корня gh-pages (index.html в /)
+      # 5️⃣ Публикуем корневой сайт (обновляется /rpp_4lab/)
       - name: Опубликовать корень сайта
         uses: peaceiris/actions-gh-pages@v3
         with:
@@ -48,14 +52,14 @@ jobs:
           user_name: github-actions[bot]
           user_email: 41898282+github-actions[bot]@users.noreply.github.com
 
-      # Деплой самой версии в /vX.Y.Z/
+      # 6️⃣ Публикуем версию (в /rpp_4lab/vX.Y.Z/)
       - name: Опубликовать папку версии
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: public-ver
-          destination_dir: ${{ steps.rel.outputs.segment }}
+          destination_dir: rpp_4lab/${{ steps.rel.outputs.segment }}
           keep_files: true
           user_name: github-actions[bot]
           user_email: 41898282+github-actions[bot]@users.noreply.github.com
