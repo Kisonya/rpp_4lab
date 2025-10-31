@@ -11,14 +11,12 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      # 1. Получение исходников по тегу релиза
       - name: Получить исходники по тегу релиза
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.release.tag_name }}
 
-      # 2. Вычисление сегмента папки (v<тег>)
-      - name: Определить имя папки релиза
+      - name: Определить имя папки релиза (v<tag>)
         id: rel
         run: |
           TAG="${{ github.event.release.tag_name }}"
@@ -26,20 +24,38 @@ jobs:
           if [[ "$TAG" =~ ^v ]]; then SEG="$TAG"; else SEG="v$TAG"; fi
           echo "segment=$SEG" >> $GITHUB_OUTPUT
 
-      # 3. Подготовка директории для публикации
-      - name: Подготовить директорию для публикации
+      # Сборка контента версии
+      - name: Подготовить директорию версии
         run: |
-          mkdir -p public
-          cp -R index.html ru en public/
+          mkdir -p public-ver
+          cp -R index.html ru en public-ver/
 
-      # 4. Публикация релиза на gh-pages
-      - name: Деплой релиза на GitHub Pages
+      # Сборка корня (только index.html)
+      - name: Подготовить корневую директорию
+        run: |
+          mkdir -p public-root
+          cp index.html public-root/
+
+      # Деплой корня gh-pages (index.html в /)
+      - name: Опубликовать корень сайта
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: public
-          destination_dir: ${{ steps.rel.outputs.segment }} # <── исправлено!
+          publish_dir: public-root
+          destination_dir: .
+          keep_files: true
+          user_name: github-actions[bot]
+          user_email: 41898282+github-actions[bot]@users.noreply.github.com
+
+      # Деплой самой версии в /vX.Y.Z/
+      - name: Опубликовать папку версии
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: public-ver
+          destination_dir: ${{ steps.rel.outputs.segment }}
           keep_files: true
           user_name: github-actions[bot]
           user_email: 41898282+github-actions[bot]@users.noreply.github.com
